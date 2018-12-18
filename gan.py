@@ -4,17 +4,10 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 from dataloader import dataloader
-############### 追記箇所　以下#############################################################################################
 from inception_score import *    
-############### 追記箇所　以上#############################################################################################
-
-############### 追記箇所　以下#############################################################################################
 from fid_score import *
-############### 追記箇所　以上#############################################################################################
 
 class generator(nn.Module):
-    # Network Architecture is exactly same as in infoGAN (https://arxiv.org/abs/1606.03657)
-    # Architecture : FC1024_BR-FC7x7x128_BR-(64)4dc2s_BR-(1)4dc2s_S
     def __init__(self, input_dim=100, output_dim=1, input_size=32):
         super(generator, self).__init__()
         #  ノイズの次元数
@@ -55,8 +48,6 @@ class generator(nn.Module):
 
 
 class discriminator(nn.Module):
-    # Network Architecture is exactly same as in infoGAN (https://arxiv.org/abs/1606.03657)
-    # Architecture : (64)4c2s-(128)4c2s_BL-FC1024_BL-FC1_S
     def __init__(self, input_dim=1, output_dim=1, input_size=32):
         super(discriminator, self).__init__()
         #  入力画像のチャネル数　             {1 -->> グレースケール, 3 -->> カラー画像}
@@ -74,11 +65,6 @@ class discriminator(nn.Module):
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2),
         )
-        #  {128, 8, 8}入力　を {128×8×8}にして　-->> 1024 -->> 1 (確率)
-        #self.fc = nn.Sequential(
-        #    nn.Linear(128 * (self.input_size // 4) * (self.input_size // 4), 1024),
-        #    nn.BatchNorm1d(1024),
-        #  {128, 8, 8}入力　を {128×8×8}にして　-->> 1024 -->> 1 (確率)
         self.fc = nn.Sequential(
             nn.Linear(128 * (self.input_size // 4) * (self.input_size // 4), 1024),
             nn.BatchNorm1d(1024),
@@ -122,14 +108,9 @@ class GAN(object):
         #  GANの種類を定義
         self.model_name = args.gan_type
         self.input_size = args.input_size
-        # 生成モデルの入力のノイズの次元数
         self.z_dim = 30
-        #self.z_dim = self.batch_pretraining * (2 * self.batch_pretraining + 1)
-############### UTの追記箇所　以下#############################################################################################
         self.alpha = 0.8
-        #self.num_sigma = 5
         self.fid_score = 20
-############### UTの追記箇所　以下#############################################################################################
         # load dataset
         self.data_loader = dataloader(self.dataset, self.input_size, self.batch_size)
         self.data_loader_scoring = dataloader(self.dataset, self.input_size, self.batch_scoring)
@@ -137,7 +118,6 @@ class GAN(object):
         self.data_loader_pretraining = dataloader(self.dataset, self.input_size, self.batch_pretraining)
         data = self.data_loader.__iter__().__next__()[0]
 
-        # networks init
         #  生成モデルと識別モデルの初期化　ノイズの次元数、生成画像の縦横、出力画像のチャネル数を定義
         self.G = generator(input_dim=self.z_dim, output_dim=data.shape[1], input_size=self.input_size)
         self.D = discriminator(input_dim=data.shape[1], output_dim=1, input_size=self.input_size)
@@ -145,10 +125,8 @@ class GAN(object):
         #   それぞれ更新するパラメータを定義することで生成モデルにおいて識別モデルのパラメータを更新しない
         self.G_optimizer = optim.Adam(self.G.parameters(), lr=args.lrG, betas=(args.beta1, args.beta2))
         self.D_optimizer = optim.Adam(self.D.parameters(), lr=args.lrD, betas=(args.beta1, args.beta2))
-
-############### UTの追記箇所　以下#############################################################################################
+        #   事前学習用の最適化手法の定義
         self.optimizerG2 = optim.Adam(self.G.parameters(), lr=args.lrG_FRECHET, betas=(args.beta1, args.beta2))
-############### UTの追記箇所　以下#############################################################################################
 
         if self.gpu_mode:
             self.G.cuda()
@@ -177,10 +155,8 @@ class GAN(object):
         self.train_hist['G_loss'] = []
         self.train_hist['per_epoch_time'] = []
         self.train_hist['total_time'] = []
-############### 追記箇所　以下#############################################################################################
         self.train_hist['FID'] = []
         self.train_hist['inception_score'] = []        
-############### 追記箇所　以上#############################################################################################
 
         #  訓練画像のラベル　-->> 1,  生成画像のラベル　-->> 0
         self.y_real_, self.y_fake_ = torch.ones(self.batch_size, 1), torch.zeros(self.batch_size, 1)
@@ -217,8 +193,7 @@ class GAN(object):
                 #  生成モデルにとって生成画像の認識結果は「 0 」 に近いほどよい
                 G_ = self.G(z_)
                 
-############### 追記箇所　以下#############################################################################################
-# inception_score.py (pytorch)
+# inception_score.py 
                 self.G.eval()
                 num_of_scoring = int(50000 / self.batch_scoring)
                 if ((iter+1)%500) == 0:
@@ -245,7 +220,7 @@ class GAN(object):
                                     FID = np.append(FID, frechet_inception_distance)
                             self.train_hist['FID'].append(np.mean(FID))
                             print("FID", np.mean(FID))
-############### 追記箇所　以上#############################################################################################
+
                 self.G.train()
                 D_fake = self.D(G_)
                 D_fake_loss = self.BCE_loss(D_fake, self.y_fake_)
