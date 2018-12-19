@@ -39,7 +39,7 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
         dtype = torch.FloatTensor
 
     # Set up dataloader
-   #  入力画像群（imgs） を Dataloaderでバッチサイズだけ読み込み
+    #  入力画像群（imgs） を Dataloaderでバッチサイズだけ読み込み
     dataloader = torch.utils.data.DataLoader(imgs, batch_size=batch_size)
 
     #  学習済みのInception modelを読み込み
