@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os
 import pathlib
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
@@ -12,10 +11,6 @@ from torch.nn.functional import adaptive_avg_pool2d
 from torch.autograd import Variable
 from inception import InceptionV3
 from inception_for_pretrain import InceptionV3_for_pretrain
-#from torchvision.models.inception import inception_v3
-########### 追記　箇所　####################################################################################
-from myUTfunctions import *
-########### 追記　箇所　####################################################################################
 
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument('path', type=str, nargs=2,
@@ -33,23 +28,15 @@ parser.add_argument('-c', '--gpu', default='', type=str,
 
 def get_activations(images, model=InceptionV3([InceptionV3.BLOCK_INDEX_BY_DIM[2048]]), batch_size=64, dims=2048,
                     cuda=True, verbose=False):
-    """Calculates the activations of the pool_3 layer for all images.
+    """ 全画像に対して、pool3 layerの活性の大きさを計算
     Params:
-    -- images      : Numpy array of dimension (n_images, 3, hi, wi). The values
-                     must lie between 0 and 1.
-    -- model       : Instance of inception model
-    -- batch_size  : the images numpy array is split into batches with
-                     batch size batch_size. A reasonable batch size depends
-                     on the hardware.
-    -- dims        : Dimensionality of features returned by Inception
-    -- cuda        : If set to True, use GPU
-    -- verbose     : If set to True and parameter out_step is given, the number
-                     of calculated batches is reported.
-    Returns:
-    -- A numpy array of dimension (num images, dims) that contains the
-       activations of the given tensor when feeding inception with the
-       query tensor.
+    -- images      : 3次元のNumpy array
+    -- model       : inception モデルのインスタンス
+    -- batch_size  : imagesのnumpy arrayをバッチサイズに分割
+    -- dims        : inception モデルから帰ってくる特徴量の次元の大きさ
+    -- cuda        : GPUを使うか否か
     """
+    
     model = model.cuda()
     model.eval()
 
@@ -70,16 +57,12 @@ def get_activations(images, model=InceptionV3([InceptionV3.BLOCK_INDEX_BY_DIM[20
         start = i * batch_size
         end = start + batch_size
 
-#        batch = torch.from_numpy(images[start:end]).type(torch.FloatTensor)
-#        batch = Variable(images, volatile=True).cuda()
-#        batch = Variable(images.type(torch.FloatTensor), volatile=True)
         batch = Variable(images[start:end].type(torch.FloatTensor), volatile=True)
         if cuda:
             batch = batch.cuda()
 
         pred = model(batch)[0]
-        # If model output is not scalar, apply global spatial average pooling.
-        # This happens if you choose a dimensionality not equal 2048.
+
         if pred.shape[2] != 1 or pred.shape[3] != 1:
             pred = adaptive_avg_pool2d(pred, output_size=(1, 1))
 
@@ -92,22 +75,12 @@ def get_activations(images, model=InceptionV3([InceptionV3.BLOCK_INDEX_BY_DIM[20
 
 
 def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
-    """Numpy implementation of the Frechet Distance.
-    The Frechet distance between two multivariate Gaussians X_1 ~ N(mu_1, C_1)
-    and X_2 ~ N(mu_2, C_2) is
-            d^2 = ||mu_1 - mu_2||^2 + Tr(C_1 + C_2 - 2*sqrt(C_1*C_2)).
-    Stable version by Dougal J. Sutherland.
+    """二つの多次元正規分布間のfrechet distanceの計算.
     Params:
-    -- mu1   : Numpy array containing the activations of a layer of the
-               inception net (like returned by the function 'get_predictions')
-               for generated samples.
-    -- mu2   : The sample mean over activations, precalculated on an 
-               representive data set.
-    -- sigma1: The covariance matrix over activations for generated samples.
-    -- sigma2: The covariance matrix over activations, precalculated on an 
-               representive data set.
-    Returns:
-    --   : The Frechet Distance.
+    -- mu1   : 生成された画像をinceptioモデルに入力した時の特徴の平均
+    -- mu2   : サンプル画像をinceptionモデルに入力した時の特徴の平均
+    -- sigma1: 生成された画像をinceptionモデルに入力した時の特徴の共分散行列.
+    -- sigma2: サンプル画像をinceptionモデルに入力した時の特徴の共分散行列
     """
 
     mu1 = np.atleast_1d(mu1)
@@ -146,48 +119,18 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
 
 def calculate_activation_statistics(images, model=InceptionV3([InceptionV3.BLOCK_INDEX_BY_DIM[2048]]), batch_size=64,
                                     dims=2048, cuda=True, verbose=False):
-    """Calculation of the statistics used by the FID.
+    """FIDの計算に用いる統計量（平均と共分散行列）の計算.
     Params:
-    -- images      : Numpy array of dimension (n_images, 3, hi, wi). The values
-                     must lie between 0 and 1.
-    -- model       : Instance of inception model
-    -- batch_size  : The images numpy array is split into batches with
-                     batch size batch_size. A reasonable batch size
-                     depends on the hardware.
-    -- dims        : Dimensionality of features returned by Inception
-    -- cuda        : If set to True, use GPU
-    -- verbose     : If set to True and parameter out_step is given, the
-                     number of calculated batches is reported.
-    Returns:
-    -- mu    : The mean over samples of the activations of the pool_3 layer of
-               the inception model.
-    -- sigma : The covariance matrix of the activations of the pool_3 layer of
-               the inception model.
+    -- images      : 3次元のNumpy array
+    -- model       : inception モデルのインスタンス
+    -- batch_size  : imagesのnumpy arrayをバッチサイズに分割
+    -- dims        : inception モデルから帰ってくる特徴量の次元の大きさ
+    -- cuda        : GPUを使うか否か
     """
     act = get_activations(images, model, batch_size, dims, cuda, verbose)
     mu = np.mean(act, axis=0)
     sigma = np.cov(act, rowvar=False)
     return mu, sigma
-
-########### 追記　箇所　####################################################################################
-### UTで 正規分布の平均と標準偏差を求める関数の定義　#############################################################
-
-def calculate_activation_statistics_UT(images, model2, batch_size=64, dims=2048, alpha=0.8, cuda=True, verbose=False):    
-    # 画像群を入力として、そのシグマ点と重みをサンプル
-    block_idx = InceptionV3_for_pretrain.BLOCK_INDEX_BY_DIM[dims]
-    model1 = InceptionV3_for_pretrain([block_idx]).cuda()
-    model1.eval()
-    #print("model1.requires_grad", model1.requires_grad)
-    # Generator model -->> model2
-    sampx, UTW = UTsamples2(batch_size, images, alpha)
-    print("sampx.shape", sampx.shape)
-    print("UTW.shape", UTW.shape)
-    # シグマ点と重みから、model(inception model)で特徴表現に非線型変換した時の平均と分散をreturn
-    mu, sigma=UT2_inception_generator(model1, model2, sampx,UTW,alpha) 
-    return mu, sigma
-
-##########################################################################################################
-########### 追記　箇所　####################################################################################
 
 
 def _compute_statistics_of_path(path, model, batch_size, dims, cuda):
@@ -201,10 +144,10 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda):
 
         imgs = np.array([imread(str(fn)).astype(np.float32) for fn in files])
 
-        # Bring images to shape (B, 3, H, W)
+        # 画像を(B, 3, H, W)のshapeに
         imgs = imgs.transpose((0, 3, 1, 2))
 
-        # Rescale images to be between 0 and 1
+        # 画像を0-1に正規化
         imgs /= 255
 
         m, s = calculate_activation_statistics(imgs, model, batch_size,
@@ -214,7 +157,7 @@ def _compute_statistics_of_path(path, model, batch_size, dims, cuda):
 
 
 def calculate_fid_given_paths(paths, batch_size, cuda, dims):
-    """Calculates the FID of two paths"""
+    """２つのパスに含まれる画像間のFIDを計算"""
     for p in paths:
         if not os.path.exists(p):
             raise RuntimeError('Invalid path: %s' % p)
