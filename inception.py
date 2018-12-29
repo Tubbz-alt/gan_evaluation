@@ -4,7 +4,7 @@ from torchvision import models
 
 
 class InceptionV3(nn.Module):
-    """Pretrained InceptionV3 network returning feature maps"""
+    """学習済みのInceptionモデル"""
 
     # Index of default block of inception to return,
     # corresponds to output of final average pooling
@@ -12,10 +12,10 @@ class InceptionV3(nn.Module):
 
     # Maps feature dimensionality to their output blocks indices
     BLOCK_INDEX_BY_DIM = {
-        64: 0,   # First max pooling features
-        192: 1,  # Second max pooling featurs
+        64: 0,   # 最初のmax pooling層の特徴量の次元数
+        192: 1,  # 二つめのmax pooling層の特徴量の次元数
         768: 2,  # Pre-aux classifier features
-        2048: 3  # Final average pooling features
+        2048: 3  # 最後のaverage pooling層の特徴量の次元数
     }
 
     def __init__(self,
@@ -23,27 +23,8 @@ class InceptionV3(nn.Module):
                  resize_input=True,
                  normalize_input=True,
                  requires_grad=False):
-        """Build pretrained InceptionV3
-        Parameters
-        ----------
-        output_blocks : list of int
-            Indices of blocks to return features of. Possible values are:
-                - 0: corresponds to output of first max pooling
-                - 1: corresponds to output of second max pooling
-                - 2: corresponds to output which is fed to aux classifier
-                - 3: corresponds to output of final average pooling
-        resize_input : bool
-            If true, bilinearly resizes input to width and height 299 before
-            feeding input to model. As the network without fully connected
-            layers is fully convolutional, it should be able to handle inputs
-            of arbitrary size, so resizing might not be strictly needed
-        normalize_input : bool
-            If true, normalizes the input to the statistics the pretrained
-            Inception network expects
-        requires_grad : bool
-            If true, parameters of the model require gradient. Possibly useful
-            for finetuning the network
-        """
+         # 学習ずみ InceptionV3の構築
+       
         super(InceptionV3, self).__init__()
 
         self.resize_input = resize_input
@@ -58,7 +39,7 @@ class InceptionV3(nn.Module):
 
         inception = models.inception_v3(pretrained=True)
 
-        # Block 0: input to maxpool1
+        # Block 0: input から　max pooling 1 まで
         block0 = [
             inception.Conv2d_1a_3x3,
             inception.Conv2d_2a_3x3,
@@ -67,7 +48,7 @@ class InceptionV3(nn.Module):
         ]
         self.blocks.append(nn.Sequential(*block0))
 
-        # Block 1: maxpool1 to maxpool2
+        # Block 1: maxpool1 から maxpool2　まで
         if self.last_needed_block >= 1:
             block1 = [
                 inception.Conv2d_3b_1x1,
@@ -76,7 +57,7 @@ class InceptionV3(nn.Module):
             ]
             self.blocks.append(nn.Sequential(*block1))
 
-        # Block 2: maxpool2 to aux classifier
+        # Block 2: maxpool2 から aux classifier　まで
         if self.last_needed_block >= 2:
             block2 = [
                 inception.Mixed_5b,
@@ -90,7 +71,7 @@ class InceptionV3(nn.Module):
             ]
             self.blocks.append(nn.Sequential(*block2))
 
-        # Block 3: aux classifier to final avgpool
+        # Block 3: aux classifier から final avgpool　まで
         if self.last_needed_block >= 3:
             block3 = [
                 inception.Mixed_7a,
@@ -104,17 +85,6 @@ class InceptionV3(nn.Module):
             param.requires_grad = requires_grad
 
     def forward(self, inp):
-        """Get Inception feature maps
-        Parameters
-        ----------
-        inp : torch.autograd.Variable
-            Input tensor of shape Bx3xHxW. Values are expected to be in 
-            range (0, 1)
-        Returns
-        -------
-        List of torch.autograd.Variable, corresponding to the selected output 
-        block, sorted ascending by index
-        """
         outp = []
         x = inp
 
