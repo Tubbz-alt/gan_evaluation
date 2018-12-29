@@ -3,13 +3,13 @@ import argparse, os, torch
 from ACGAN import ACGAN
 
 
-"""parsing and configuration"""
+## 変数の定義 ##
 def parse_args():
     desc = "Pytorch implementation of GAN collections"
     parser = argparse.ArgumentParser(description=desc)
 
     parser.add_argument('--gan_type', type=str, default='ACGAN',
-                        choices=['ACGAN', 'GAN'],
+                        choices=['ACGAN'],
                         help='The type of GAN')
 
     parser.add_argument('--dataset', type=str, default='lsun', choices=['mnist', 'fashion-mnist', 'cifar10', 'cifar100', 'svhn', 'stl10', 'lsun'],
@@ -37,27 +37,23 @@ def parse_args():
     parser.add_argument('--opt_preite', type=int, default=40, help='pretraining iteration number')
     return check_args(parser.parse_args())
 
-"""checking arguments"""
+## ディレクトリのチェック ##
 def check_args(args):
-    # --save_dir
+
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
 
-    # --result_dir
     if not os.path.exists(args.result_dir):
         os.makedirs(args.result_dir)
 
-    # --result_dir
     if not os.path.exists(args.log_dir):
         os.makedirs(args.log_dir)
 
-    # --epoch
     try:
         assert args.epoch >= 1
     except:
         print('number of epochs must be larger than or equal to one')
 
-    # --batch_size
     try:
         assert args.batch_size >= 1
     except:
@@ -65,9 +61,9 @@ def check_args(args):
 
     return args
 
-"""main"""
+# main関数 #
 def main():
-    # parse arguments
+    # ハイパーパラメータの設定
     args = parse_args()
     if args is None:
         exit()
@@ -75,7 +71,7 @@ def main():
     if args.benchmark_mode:
         torch.backends.cudnn.benchmark = True
 
-        # declare instance for GAN
+    # GANのモデルを決定
     if args.gan_type == 'GAN':
         gan = GAN(args)
     elif args.gan_type == 'ACGAN':
@@ -83,14 +79,13 @@ def main():
     else:
         raise Exception("[!] There is no option for " + args.gan_type)
 
-        # launch the graph in a session
     gan.train()
     print(" [*] Training finished!")
 
-    # visualize learned generator
+    # 学習済みの生成器が生成するイメージの可視化
     gan.visualize_results(args.epoch)
     print(" [*] Testing finished!")
     #gan.load_generated_images_for_scoring(50000)
-    #print("finish loading")
+    
 if __name__ == '__main__':
     main()
