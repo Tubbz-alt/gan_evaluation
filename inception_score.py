@@ -1,8 +1,3 @@
-# coding: utf-8
-
-## 入力として使う画像（生成画像）numpy image かつ　[-1, 1]にnormalized
-## 入力画像のサイズをresizeして用意する必要なし、中で勝手にresize
-## pytorch datasetに変換する必要あり？
 import torch
 from torch import nn
 from torch.autograd import Variable
@@ -15,12 +10,12 @@ import numpy as np
 from scipy.stats import entropy
 
 def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
-    """Computes the inception score of the generated images imgs
+    """ 生成されたに対してInception Scoreを計算
 
-    imgs -- Torch dataset of (3xHxW) numpy images normalized in the range [-1, 1]
-    cuda -- whether or not to run on GPU
-    batch_size -- batch size for feeding into Inception v3
-    splits -- number of splits
+    imgs -- (3x高さx幅) numpy画像のtorchデータセット
+    cuda -- GPUを使うか否か
+    batch_size -- inceptionモデルに与える際のバッチサイズ
+    splits -- 分割数
     """
     #  画像の枚数　ーー＞　N
     N = len(imgs)
@@ -29,7 +24,6 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
     assert batch_size > 0
     assert N > batch_size
 
-    # Set up dtype
     #  入力画像がcudaなら　dtypeをcudaとする
     if cuda:
         dtype = torch.cuda.FloatTensor
@@ -38,7 +32,6 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
             print("WARNING: You have a CUDA device, so you should probably set cuda=True")
         dtype = torch.FloatTensor
 
-    # Set up dataloader
     #  入力画像群（imgs） を Dataloaderでバッチサイズだけ読み込み
     dataloader = torch.utils.data.DataLoader(imgs, batch_size=batch_size)
 
@@ -53,7 +46,7 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
         x = inception_model(x)
         return F.softmax(x).data.cpu().numpy()
 
-    # Get predictions
+    # 実際に計算
     preds = np.zeros((N, 1000))
 
     for i, batch in enumerate(dataloader, 0):
@@ -63,7 +56,7 @@ def inception_score(imgs, cuda=True, batch_size=32, resize=False, splits=1):
 
         preds[i*batch_size:i*batch_size + batch_size_i] = get_pred(batchv)
 
-    # Now compute the mean kl-div
+    # KLダイバージェンスの平均の算出
     split_scores = []
 
     for k in range(splits):
