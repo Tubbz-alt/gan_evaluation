@@ -35,3 +35,4 @@ main.pyにてモデルの学習を実行、GAN.pyでは学習時にFID、ISを�
 ・matplotlib 2.2.2
 ・numpy 1.14.3
 
+
