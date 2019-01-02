@@ -1,7 +1,8 @@
 import argparse, os, torch
 
 from ACGAN import ACGAN
-
+from GAN import GAN
+from WGAN import WGAN
 
 ## 変数の定義 ##
 def parse_args():
@@ -9,7 +10,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description=desc)
 
     parser.add_argument('--gan_type', type=str, default='ACGAN',
-                        choices=['ACGAN'],
+                        choices=['ACGAN', 'GAN', 'WGAN'],
                         help='The type of GAN')
 
     parser.add_argument('--dataset', type=str, default='lsun', choices=['mnist', 'fashion-mnist', 'cifar10', 'cifar100', 'svhn', 'stl10', 'lsun'],
@@ -74,6 +75,8 @@ def main():
     # GANのモデルを決定
     if args.gan_type == 'GAN':
         gan = GAN(args)
+    elif args.gan_type == 'WGAN':
+        gan = WGAN(args)
     elif args.gan_type == 'ACGAN':
         gan = ACGAN(args)
     else:
