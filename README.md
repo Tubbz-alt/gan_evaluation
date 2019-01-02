@@ -23,3 +23,15 @@ inception.pyではFIDやISを計算するときに用いる学習済みの分類
 
 
 main.pyにてモデルの学習を実行、GAN.pyでは学習時にFID、ISを保存し可視化する
+
+# 開発環境
+・pytorch 0.4
+・torchvision 0.2.1
+・NVIDIA GTX 1080 ti
+・cuda 9.0
+・Python 3.5.2
+・imageio 2.3.0
+・scipy 1.1.0
+・matplotlib 2.2.2
+・numpy 1.14.3
+
