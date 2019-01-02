@@ -1,7 +1,7 @@
 # gan_evaluation
 GANの評価
 
-学習済みのGANのモデルに対して、生成される画像の質や、多様性を評価する。
+GANの学習過程において、生成される画像の質や、多様性を評価する。
 評価尺度はFrechet Inception Distance(FID)とInception Score(FID)
 
 
@@ -13,7 +13,7 @@ Inception Score:http://papers.nips.cc/paper/6124-improved-techniques-for-trainin
 
 
 
-ACGAN.py、GAN.pyにてモデルの構造、loss、学習ほうなどを定義
+GAN.py、ACGAN.py、WGAN.pyにてモデルの構造、loss、学習ほうなどを定義
 
 fid_score.pyでFIDの、inception_score.pyでISの計算法を定義
 
