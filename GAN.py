@@ -96,7 +96,6 @@ class GAN(object):
         self.batch_size = args.batch_size
         self.batch_scoring = args.batch_scoring
         self.batch_scoring_fid = args.batch_scoring_fid
-        self.batch_pretraining = args.batch_pretraining
         self.save_dir = args.save_dir
         #  結果を残すファイル reslut_dirに残す
         self.result_dir = args.result_dir
@@ -115,7 +114,7 @@ class GAN(object):
         self.data_loader = dataloader(self.dataset, self.input_size, self.batch_size)
         self.data_loader_scoring = dataloader(self.dataset, self.input_size, self.batch_scoring)
         self.data_loader_scoring_fid = dataloader(self.dataset, self.input_size, self.batch_scoring_fid)
-        self.data_loader_pretraining = dataloader(self.dataset, self.input_size, self.batch_pretraining)
+
         data = self.data_loader.__iter__().__next__()[0]
 
         #  生成モデルと識別モデルの初期化　ノイズの次元数、生成画像の縦横、出力画像のチャネル数を定義
@@ -125,8 +124,6 @@ class GAN(object):
         #   それぞれ更新するパラメータを定義することで生成モデルにおいて識別モデルのパラメータを更新しない
         self.G_optimizer = optim.Adam(self.G.parameters(), lr=args.lrG, betas=(args.beta1, args.beta2))
         self.D_optimizer = optim.Adam(self.D.parameters(), lr=args.lrD, betas=(args.beta1, args.beta2))
-        #   事前学習用の最適化手法の定義
-        self.optimizerG2 = optim.Adam(self.G.parameters(), lr=args.lrG_FRECHET, betas=(args.beta1, args.beta2))
 
         if self.gpu_mode:
             self.G.cuda()
@@ -302,7 +299,7 @@ class GAN(object):
 
         samples = (samples + 1) / 2
         utils.save_images(samples[:image_frame_dim * image_frame_dim, :, :, :], [image_frame_dim, image_frame_dim],
-                          self.result_dir + '/' + self.dataset + '/' + self.model_name + '/' + self.model_name + '_epoch%03d' % epoch + '_UT_pretrain_FID_score' +'.png')
+                          self.result_dir + '/' + self.dataset + '/' + self.model_name + '/' + self.model_name + '_epoch%03d' % epoch + '_FID_score' +'.png')
 
     def save(self):
         save_dir = os.path.join(self.save_dir, self.dataset, self.model_name)
@@ -310,14 +307,14 @@ class GAN(object):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        torch.save(self.G.state_dict(), os.path.join(save_dir, self.model_name + '_G_UT_pretrain_FID_score.pkl'))
-        torch.save(self.D.state_dict(), os.path.join(save_dir, self.model_name + '_D_UT_pretrain_FID_score.pkl'))
+        torch.save(self.G.state_dict(), os.path.join(save_dir, self.model_name + '_FID_score.pkl'))
+        torch.save(self.D.state_dict(), os.path.join(save_dir, self.model_name + '_FID_score.pkl'))
 
-        with open(os.path.join(save_dir, self.model_name + '_history_UT_pretrain_FID_score.pkl'), 'wb') as f:
+        with open(os.path.join(save_dir, self.model_name + '_history_FID_score.pkl'), 'wb') as f:
             pickle.dump(self.train_hist, f)
 
     def load(self):
         save_dir = os.path.join(self.save_dir, self.dataset, self.model_name)
 
-        self.G.load_state_dict(torch.load(os.path.join(save_dir, self.model_name + '_G_UT_pretrain_FID_score.pkl')))
-        self.D.load_state_dict(torch.load(os.path.join(save_dir, self.model_name + '_D_UT_pretrain_FID_score.pkl')))
+        self.G.load_state_dict(torch.load(os.path.join(save_dir, self.model_name + '_FID_score.pkl')))
+        self.D.load_state_dict(torch.load(os.path.join(save_dir, self.model_name + '_FID_score.pkl')))
