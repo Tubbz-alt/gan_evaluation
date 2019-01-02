@@ -46,21 +46,12 @@ def load_mnist(dataset):
         y_vec[i, y[i]] = 1
 
     X = X.transpose(0, 3, 1, 2) / 255.
-    # y_vec = y_vec.transpose(0, 3, 1, 2)
 
     X = torch.from_numpy(X).type(torch.FloatTensor)
     y_vec = torch.from_numpy(y_vec).type(torch.FloatTensor)
     return X, y_vec
 
 def load_celebA(dir, transform, batch_size, shuffle):
-    # transform = transforms.Compose([
-    #     transforms.CenterCrop(160),
-    #     transform.Scale(64)
-    #     transforms.ToTensor(),
-    #     transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
-    # ])
-
-    # data_dir = 'data/celebA'  # this path depends on your computer
     dset = datasets.ImageFolder(dir, transform)
     data_loader = torch.utils.data.DataLoader(dset, batch_size, shuffle)
 
@@ -113,15 +104,9 @@ def loss_plot(hist, path = 'Train_hist.png', model_name = ''):
 
     y1 = hist['D_loss']
     y2 = hist['G_loss']
-############### 追記箇所　以下#############################################################################################
-#   y3 = hist['Inception_Score'] 
-############### 追記箇所　以上#############################################################################################
 
     plt.plot(x, y1, label='D_loss')
     plt.plot(x, y2, label='G_loss')
-############### 追記箇所　以下#############################################################################################
-#   plt.plot(x, y3, label='Inception_Score')
-############### 追記箇所　以上#############################################################################################
 
     plt.xlabel('Iter')
     plt.ylabel('Loss')
@@ -139,13 +124,8 @@ def loss_plot(hist, path = 'Train_hist.png', model_name = ''):
 def score_plot(hist, path = 'Score_hist.png', model_name = ''):
     x = range(len(hist['inception_score']))
 
-#    y1 = hist['D_loss']
-#    y2 = hist['G_loss']
-############### 追記箇所　以下#############################################################################################
     y3 = hist['inception_score'] 
-############### 追記箇所　以上#############################################################################################
     plt.plot(x, y3, label='inception_score')
-############### 追記箇所　以上#############################################################################################
 
     plt.xlabel('Iter')
     plt.ylabel('Score')
@@ -162,14 +142,8 @@ def score_plot(hist, path = 'Score_hist.png', model_name = ''):
 
 def fid_plot(hist, path = 'fid_hist.png', model_name = ''):
     x = range(len(hist['FID']))
-
-#    y1 = hist['D_loss']
-#    y2 = hist['G_loss']
-############### 追記箇所　以下#############################################################################################
     y3 = hist['FID'] 
-############### 追記箇所　以上#############################################################################################
     plt.plot(x, y3, label='FID')
-############### 追記箇所　以上#############################################################################################
 
     plt.xlabel('Iter')
     plt.ylabel('FID')
